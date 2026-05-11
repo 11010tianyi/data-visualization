@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataViz Studio — 26种专业图表可视化</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --dark: #141413;
+            --light: #faf9f5;
+            --mid-gray: #b0aea5;
+            --light-gray: #e8e6dc;
+            --orange: #d97757;
+            --blue: #6a9bcc;
+            --green: #788c5d;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(20,20,19,0.08);
+            --shadow-lg: 0 12px 48px rgba(20,20,19,0.12);
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: 'Lora', Georgia, serif;
+            background: var(--light);
+            color: var(--dark);
+            min-height: 100vh;
+        }
+        h1,h2,h3,h4,h5,h6,.heading {
+            font-family: 'Poppins', Arial, sans-serif;
+        }
+
+        /* ── Header ── */
+        header {
+            background: var(--dark);
+            color: var(--light);
+            padding: 48px 24px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        header::before {
+            content: '';
+            position: absolute;
+            top: -60%; left: -20%;
+            width: 60%; height: 200%;
+            background: radial-gradient(ellipse, rgba(217,119,87,0.15), transparent 70%);
+            pointer-events: none;
+        }
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -60%; right: -20%;
+            width: 60%; height: 200%;
+            background: radial-gradient(ellipse, rgba(106,155,204,0.12), transparent 70%);
+            pointer-events: none;
+        }
+        header h1 {
+            font-size: 2.4em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            position: relative;
+        }
+        header h1 span { color: var(--orange); }
+        header p {
+            font-size: 1.05em;
+            color: var(--mid-gray);
+            margin-top: 10px;
+            position: relative;
+        }
+        .header-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 28px;
+            position: relative;
+        }
+        .header-stats .stat {
+            text-align: center;
+        }
+        .header-stats .stat-num {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--orange);
+        }
+        .header-stats .stat-label {
+            font-size: 0.85em;
+            color: var(--mid-gray);
+            margin-top: 2px;
+        }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+        .main-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            margin-top: -32px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: sticky;
+            top: 16px;
+            height: fit-content;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .card {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            transition: box-shadow 0.2s;
+        }
+        .card:hover { box-shadow: var(--shadow-lg); }
+        .card-title {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-title .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* ── Upload ── */
+        .upload-zone {
+            border: 2px dashed var(--light-gray);
+            border-radius: var(--radius);
+            padding: 28px 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: var(--light);
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: var(--orange);
+            background: rgba(217,119,87,0.04);
+        }
+        .upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
+        .upload-zone h4 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95em;
+            color: var(--dark);
+        }
+        .upload-zone p { font-size: 0.82em; color: var(--mid-gray); margin-top: 4px; }
+        .upload-zone .formats {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+        }
+        .upload-zone .formats span {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.7em;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: var(--light-gray);
+            color: var(--dark);
+        }
+        #fileInput { display: none; }
+
+        /* ── File Info ── */
+        .file-info {
+            display: none;
+            padding: 14px;
+            background: var(--light);
+            border-radius: 8px;
+            font-size: 0.85em;
+            color: var(--dark);
+        }
+        .file-info.show { display: block; }
+        .file-info .name {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            color: var(--orange);
+        }
+        .file-info .stats { color: var(--mid-gray); margin-top: 4px; }
+
+        /* ── Templates ── */
+        .tpl-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .tpl-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 10px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            background: var(--light);
+            cursor: pointer;
+            font-size: 0.78em;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            color: var(--dark);
+            transition: all 0.2s;
+        }
+        .tpl-btn:hover {
+            border-color: var(--orange);
+            background: rgba(217,119,87,0.06);
+            color: var(--orange);
+        }
+        .tpl-btn .t-icon { font-size: 1.1em; }
+
+        /* ── Data Preview ── */
+        .preview-wrap {
+            max-height: 180px;
+            overflow: auto;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 0.78em;
+        }
+        .preview-wrap table { width: 100%; border-collapse: collapse; }
+        .preview-wrap th {
+            background: var(--dark);
+            color: var(--light);
+            padding: 7px 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+        .preview-wrap td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .preview-wrap tr:nth-child(even) { background: var(--light); }
+
+        /* ── Content Area ── */
+        .content { display: flex; flex-direction: column; gap: 24px; }
+
+        /* ── Chart Category ── */
+        .chart-category {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .cat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        .cat-icon {
+            width: 40px; height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            flex-shrink: 0;
+        }
+        .cat-header h3 {
+            font-size: 1em;
+            font-weight: 600;
+        }
+        .cat-header p {
+            font-size: 0.8em;
+            color: var(--mid-gray);
+        }
+        .cat-count {
+            margin-left: auto;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.75em;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: var(--light);
+            color: var(--mid-gray);
+        }
+
+        /* ── Chart Grid ── */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+        .chart-card {
+            border: 2px solid var(--light-gray);
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: #fff;
+        }
+        .chart-card:hover {
+            border-color: var(--orange);
+            box-shadow: 0 6px 24px rgba(217,119,87,0.12);
+            transform: translateY(-3px);
+        }
+        .chart-card.selected {
+            border-color: var(--orange);
+            box-shadow: 0 0 0 3px rgba(217,119,87,0.15);
+        }
+        .chart-thumb {
+            width: 100%;
+            height: 150px;
+            overflow: hidden;
+            background: var(--light);
+            position: relative;
+        }
+        .chart-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+        .chart-card:hover .chart-thumb img {
+            transform: scale(1.03);
+        }
+        .chart-thumb .thumb-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(20,20,19,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .chart-card:hover .thumb-overlay { opacity: 1; }
+        .thumb-overlay span {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: var(--orange);
+        }
+        .chart-info {
+            padding: 12px 14px;
+        }
+        .chart-info h4 {
+            font-size: 0.88em;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .chart-info p {
+            font-size: 0.78em;
+            color: var(--mid-gray);
+            line-height: 1.4;
+        }
+
+        /* ── Generate Section ── */
+        .gen-section {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            display: none;
+        }
+        .gen-section.show { display: block; }
+        .gen-section h3 {
+            font-size: 1.05em;
+            font-weight: 600;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .gen-section h3 .sel-badge {
+            font-size: 0.75em;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(217,119,87,0.1);
+            color: var(--orange);
+        }
+        .opt-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+        .opt-group label {
+            display: block;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.8em;
+            font-weight: 500;
+            color: var(--mid-gray);
+            margin-bottom: 5px;
+        }
+        .opt-group input, .opt-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-family: 'Lora', serif;
+            font-size: 0.9em;
+            color: var(--dark);
+            background: var(--light);
+            transition: border-color 0.2s;
+        }
+        .opt-group input:focus, .opt-group select:focus {
+            outline: none;
+            border-color: var(--orange);
+        }
+        .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 11px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--orange);
+            color: #fff;
+        }
+        .btn-primary:hover { background: #c4683f; transform: translateY(-1px); }
+        .btn-outline {
+            background: transparent;
+            color: var(--dark);
+            border: 2px solid var(--light-gray);
+        }
+        .btn-outline:hover { border-color: var(--dark); }
+        .btn-blue {
+            background: var(--blue);
+            color: #fff;
+        }
+        .btn-blue:hover { background: #5a8ab5; }
+        .btn-green {
+            background: var(--green);
+            color: #fff;
+        }
+        .btn-green:hover { background: #667a4e; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+        /* ── Chart Output ── */
+        .chart-output {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            display: none;
+        }
+        .chart-output.show { display: block; }
+        .chart-output h3 {
+            font-size: 1.05em;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .chart-frame {
+            border: 1px solid var(--light-gray);
+            border-radius: var(--radius);
+            min-height: 420px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--light);
+            overflow: hidden;
+        }
+        .chart-frame img {
+            max-width: 100%;
+            border-radius: var(--radius);
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--light-gray);
+            border-top-color: var(--orange);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .dl-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+
+        /* ── Modal ── */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(20,20,19,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 860px;
+            width: 90%;
+            max-height: 85vh;
+            overflow: auto;
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px; right: 16px;
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--mid-gray);
+            line-height: 1;
+        }
+        .modal-close:hover { color: var(--dark); }
+        .modal-box h3 {
+            font-size: 1.1em;
+            font-weight: 600;
+            padding-right: 30px;
+        }
+        .modal-box img {
+            width: 100%;
+            border-radius: var(--radius);
+            margin-top: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 22px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.88em;
+            font-weight: 500;
+            color: #fff;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.ok { background: var(--green); }
+        .toast.err { background: #c0392b; }
+
+        /* ── Responsive ── */
+        @media (max-width: 960px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+            .chart-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+        }
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.6em; }
+            .header-stats { gap: 20px; }
+            .tpl-grid { grid-template-columns: 1fr; }
+            .chart-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>DataViz <span>Studio</span></h1>
+    <p>上传数据，选择图表，一键生成专业可视化</p>
+    <div class="header-stats">
+        <div class="stat"><div class="stat-num">26</div><div class="stat-label">图表类型</div></div>
+        <div class="stat"><div class="stat-num">9</div><div class="stat-label">分类</div></div>
+        <div class="stat"><div class="stat-num">3</div><div class="stat-label">文件格式</div></div>
+    </div>
+</header>
+
+<div class="container">
+<div class="main-layout">
+
+<!-- ═══ Sidebar ═══ -->
+<aside class="sidebar">
+    <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--orange)"></span>上传数据</div>
+        <div class="upload-zone" id="uploadZone">
+            <div class="icon">📂</div>
+            <h4>拖拽或点击上传</h4>
+            <p>支持以下格式</p>
+            <div class="formats"><span>TSV</span><span>CSV</span><span>XLSX</span></div>
+            <input type="file" id="fileInput" accept=".tsv,.csv,.xlsx,.xls">
+        </div>
+        <div class="file-info" id="fileInfo">
+            <div class="name" id="fileName"></div>
+            <div class="stats" id="fileStats"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title"><span class="dot" style="background:var(--blue)"></span>下载模板</div>
+        <div class="tpl-grid" id="tplGrid"></div>
+    </div>
+
+    <div class="card" id="previewCard" style="display:none">
+        <div class="card-title"><span class="dot" style="background:var(--green)"></span>数据预览</div>
+        <div class="preview-wrap" id="previewTable"></div>
+    </div>
+</aside>
+
+<!-- ═══ Main Content ═══ -->
+<main class="content" id="chartCategories"></main>
+
+</div><!-- /main-layout -->
+</div><!-- /container -->
+
+<!-- Generate -->
+<div class="container">
+<div class="gen-section" id="genSection">
+    <h3>⚙️ 图表配置 <span class="sel-badge" id="selBadge"></span></h3>
+    <div class="opt-grid">
+        <div class="opt-group"><label>图表标题</label><input type="text" id="optTitle" placeholder="输入标题"></div>
+        <div class="opt-group"><label>主题风格</label>
+            <select id="optTheme">
+                <option value="default">默认浅色</option>
+                <option value="academy">学术风格</option>
+                <option value="dark">深色主题</option>
+            </select>
+        </div>
+        <div class="opt-group"><label>宽度 (px)</label><input type="number" id="optW" value="800" min="400" max="2000"></div>
+        <div class="opt-group"><label>高度 (px)</label><input type="number" id="optH" value="500" min="300" max="1500"></div>
+    </div>
+    <div class="btn-row">
+        <button class="btn btn-primary" onclick="generateChart()">🎨 生成图表</button>
+        <button class="btn btn-outline" onclick="resetSel()">↺ 重新选择</button>
+    </div>
+</div>
+</div>
+
+<!-- Output -->
+<div class="container">
+<div class="chart-output" id="chartOutput">
+    <h3>📊 图表预览</h3>
+    <div class="chart-frame" id="chartFrame">
+        <div class="spinner" id="spinner"></div>
+        <img id="chartImg" style="display:none">
+    </div>
+    <div class="dl-row">
+        <button class="btn btn-primary" onclick="dlPNG()">📥 下载 PNG</button>
+        <button class="btn btn-blue" onclick="dlPDF()">📄 下载 PDF</button>
+    </div>
+</div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+        <h3 id="modalTitle"></h3>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+
+const THUMB_URLS = {
+    line: "https://mdn.alipayobjects.com/one_clip/afts/img/92hOS6_61tYAAAAARdAAAAgAoEACAQFr/original",
+    area: "https://mdn.alipayobjects.com/one_clip/afts/img/sIkTRLQeFe0AAAAAQ5AAAAgAoEACAQFr/original",
+    dual_axes: "https://mdn.alipayobjects.com/one_clip/afts/img/quMSRZ8PKKUAAAAARDAAAAgAoEACAQFr/original",
+    bar: "https://mdn.alipayobjects.com/one_clip/afts/img/OryzTbYcfKEAAAAAQ8AAAAgAoEACAQFr/original",
+    column: "https://mdn.alipayobjects.com/one_clip/afts/img/8CnQQ58vXjYAAAAAQ0AAAAgAoEACAQFr/original",
+    histogram: "https://mdn.alipayobjects.com/one_clip/afts/img/DBhqS7lYwHsAAAAAQgAAAAgAoEACAQFr/original",
+    radar: "https://mdn.alipayobjects.com/one_clip/afts/img/oOX-SaUnOnIAAAAARhAAAAgAoEACAQFr/original",
+    pie: "https://mdn.alipayobjects.com/one_clip/afts/img/kMpFS7oiKAUAAAAARTAAAAgAoEACAQFr/original",
+    treemap: "https://mdn.alipayobjects.com/one_clip/afts/img/AMAcT4IL_voAAAAAQgAAAAgAoEACAQFr/original",
+    liquid: "https://mdn.alipayobjects.com/one_clip/afts/img/mDxHRqnu9zcAAAAAQxAAAAgAoEACAQFr/original",
+    scatter: "https://mdn.alipayobjects.com/one_clip/afts/img/cCFmSpx_KgIAAAAAQrAAAAgAoEACAQFr/original",
+    sankey: "https://mdn.alipayobjects.com/one_clip/afts/img/iXFuSY_tZysAAAAAQlAAAAgAoEACAQFr/original",
+    venn: "https://mdn.alipayobjects.com/one_clip/afts/img/vel_QaZyUA0AAAAAQsAAAAgAoEACAQFr/original",
+    network_graph: "https://mdn.alipayobjects.com/one_clip/afts/img/_-TwSonSRPsAAAAAQuAAAAgAoEACAQFr/original",
+    boxplot: "https://mdn.alipayobjects.com/one_clip/afts/img/us_YRoe59WMAAAAAQmAAAAgAoEACAQFr/original",
+    violin: "https://mdn.alipayobjects.com/one_clip/afts/img/l8auRqVOHG4AAAAAQ7AAAAgAoEACAQFr/original",
+    funnel: "https://mdn.alipayobjects.com/one_clip/afts/img/htBXQ7AeIjkAAAAARjAAAAgAoEACAQFr/original",
+    flow_diagram: "https://mdn.alipayobjects.com/one_clip/afts/img/RRQKQZagwewAAAAAQSAAAAgAoEACAQFr/original",
+    fishbone: "https://mdn.alipayobjects.com/one_clip/afts/img/GTi0Qb5kOIwAAAAAQoAAAAgAoEACAQFr/original",
+    organization_chart: "https://mdn.alipayobjects.com/one_clip/afts/img/oP3LRITKmgYAAAAAQoAAAAgAoEACAQFr/original",
+    mind_map: "https://mdn.alipayobjects.com/one_clip/afts/img/U1QIR6hR41AAAAAAQ7AAAAgAoEACAQFr/original",
+    word_cloud: "https://mdn.alipayobjects.com/one_clip/afts/img/ywgiSL6MnYEAAAAASfAAAAgAoEACAQFr/original",
+    spreadsheet: "https://mdn.alipayobjects.com/one_clip/afts/img/GcbsRqv2i-UAAAAAQbAAAAgAoEACAQFr/original",
+    district_map: "https://mdn.alipayobjects.com/one_clip/afts/img/lmalRbU8eJYAAAAAQZAAAAgAoEACAQFr/original",
+    pin_map: "https://mdn.alipayobjects.com/one_clip/afts/img/YigoS56zsKAAAAAAQ_AAAAgAoEACAQFr/original",
+    path_map: "https://mdn.alipayobjects.com/one_clip/afts/img/24pOT5FeO-8AAAAASYAAAAgAoEACAQFr/original"
+};
+
+const TOOL_MAP = {
+    line:'generate_line_chart', area:'generate_area_chart', dual_axes:'generate_dual_axes_chart',
+    bar:'generate_bar_chart', column:'generate_column_chart', histogram:'generate_histogram_chart',
+    radar:'generate_radar_chart', pie:'generate_pie_chart', treemap:'generate_treemap_chart',
+    liquid:'generate_liquid_chart', scatter:'generate_scatter_chart', sankey:'generate_sankey_chart',
+    venn:'generate_venn_chart', network_graph:'generate_network_graph',
+    boxplot:'generate_boxplot_chart', violin:'generate_violin_chart',
+    funnel:'generate_funnel_chart', flow_diagram:'generate_flow_diagram',
+    fishbone:'generate_fishbone_diagram', organization_chart:'generate_organization_chart',
+    mind_map:'generate_mind_map', word_cloud:'generate_word_cloud_chart',
+    spreadsheet:'generate_spreadsheet',
+    district_map:'generate_district_map', pin_map:'generate_pin_map', path_map:'generate_path_map'
+};
+
+const TYPE_MAP = {};
+for (const [k,v] of Object.entries(TOOL_MAP)) {
+    const map = {line:'line',area:'area',dual_axes:'dual-axes',bar:'bar',column:'column',
+        histogram:'histogram',radar:'radar',pie:'pie',treemap:'treemap',liquid:'liquid',
+        scatter:'scatter',sankey:'sankey',venn:'venn',network_graph:'network-graph',
+        boxplot:'boxplot',violin:'violin',funnel:'funnel',flow_diagram:'flow-diagram',
+        fishbone:'fishbone-diagram',organization_chart:'organization-chart',mind_map:'mind-map',
+        word_cloud:'word-cloud',spreadsheet:'spreadsheet',
+        district_map:'district-map',pin_map:'pin-map',path_map:'path-map'};
+    TYPE_MAP[v] = map[k];
+}
+
+const CATEGORIES = [
+    {
+        name: '时间序列', desc: '展示趋势与变化', icon: '📈', color: 'var(--orange)',
+        charts: [
+            { key:'line', name:'折线图', desc:'时间或连续变量的趋势变化，支持多系列对比' },
+            { key:'area', name:'面积图', desc:'累积趋势展示，强调数量随时间的变化' },
+            { key:'dual_axes', name:'双轴图', desc:'同时展示两个不同量纲的指标趋势' }
+        ]
+    },
+    {
+        name: '比较分析', desc: '对比不同类别', icon: '📊', color: 'var(--blue)',
+        charts: [
+            { key:'bar', name:'条形图', desc:'横向条形比较不同类别的指标表现' },
+            { key:'column', name:'柱状图', desc:'纵向柱形对比，支持分组和堆叠' },
+            { key:'histogram', name:'直方图', desc:'展示连续数据的频率分布情况' },
+            { key:'radar', name:'雷达图', desc:'多维度能力对比分析' }
+        ]
+    },
+    {
+        name: '占比分析', desc: '部分与整体', icon: '🥧', color: 'var(--green)',
+        charts: [
+            { key:'pie', name:'饼图 / 环图', desc:'展示整体中各部分的占比关系' },
+            { key:'treemap', name:'矩形树图', desc:'层级结构的面积占比展示' },
+            { key:'liquid', name:'水波图', desc:'直观展示百分比或进度' }
+        ]
+    },
+    {
+        name: '关系分析', desc: '探索数据关联', icon: '🔗', color: 'var(--orange)',
+        charts: [
+            { key:'scatter', name:'散点图', desc:'两个连续变量之间的相关关系' },
+            { key:'sankey', name:'桑基图', desc:'展示流向、流量与转化关系' },
+            { key:'venn', name:'韦恩图', desc:'集合之间的交集与重叠关系' },
+            { key:'network_graph', name:'网络图', desc:'复杂节点-边关系网络可视化' }
+        ]
+    },
+    {
+        name: '分布分析', desc: '数据分布特征', icon: '📉', color: 'var(--blue)',
+        charts: [
+            { key:'boxplot', name:'箱线图', desc:'中位数、四分位数及离群值' },
+            { key:'violin', name:'小提琴图', desc:'数据分布的密度与形状' }
+        ]
+    },
+    {
+        name: '流程分析', desc: '阶段与因果', icon: '➡️', color: 'var(--green)',
+        charts: [
+            { key:'funnel', name:'漏斗图', desc:'流程各阶段的转化率分析' },
+            { key:'flow_diagram', name:'流程图', desc:'业务流程与决策路径' },
+            { key:'fishbone', name:'鱼骨图', desc:'因果分析，定位问题根因' }
+        ]
+    },
+    {
+        name: '层级结构', desc: '树形与组织', icon: '🌳', color: 'var(--orange)',
+        charts: [
+            { key:'organization_chart', name:'组织架构图', desc:'公司或团队层级结构' },
+            { key:'mind_map', name:'思维导图', desc:'知识体系与思维发散' }
+        ]
+    },
+    {
+        name: '地理可视化', desc: '空间数据展示', icon: '🗺️', color: 'var(--blue)',
+        charts: [
+            { key:'district_map', name:'区域地图', desc:'各区域数据的热力分布' },
+            { key:'pin_map', name:'标记地图', desc:'地理位置点的标记分布' },
+            { key:'path_map', name:'路径地图', desc:'路线与轨迹可视化' }
+        ]
+    },
+    {
+        name: '其他类型', desc: '特殊可视化', icon: '✨', color: 'var(--green)',
+        charts: [
+            { key:'word_cloud', name:'词云图', desc:'文本词频的视觉化呈现' },
+            { key:'spreadsheet', name:'数据表格', desc:'结构化数据表格或透视表' }
+        ]
+    }
+];
+
+// ── 模板数据（覆盖所有26种图表） ──
+const TEMPLATES = {
+    line: { label:'📈 折线图', tsv:'time\tvalue\tgroup\n2024-01\t120\t系列A\n2024-02\t150\t系列A\n2024-03\t180\t系列A\n2024-04\t160\t系列A\n2024-05\t200\t系列A\n2024-01\t80\t系列B\n2024-02\t100\t系列B\n2024-03\t130\t系列B\n2024-04\t110\t系列B\n2024-05\t140\t系列B' },
+    area: { label:'🏔️ 面积图', tsv:'time\tvalue\tgroup\nQ1\t100\t产品A\nQ2\t150\t产品A\nQ3\t180\t产品A\nQ4\t220\t产品A\nQ1\t80\t产品B\nQ2\t120\t产品B\nQ3\t160\t产品B\nQ4\t190\t产品B' },
+    dual_axes: { label:'📊 双轴图', tsv:'month\tsales\tprofit_rate\n1月\t120\t80\n2月\t150\t85\n3月\t180\t90\n4月\t160\t88\n5月\t200\t95' },
+    bar: { label:'📊 条形图', tsv:'category\tvalue\tgroup\n华东\t320\t2023\n华南\t280\t2023\n华北\t250\t2023\n西南\t180\t2023\n华东\t380\t2024\n华南\t320\t2024\n华北\t290\t2024\n西南\t220\t2024' },
+    column: { label:'📉 柱状图', tsv:'category\tvalue\tgroup\nQ1\t120\t2023\nQ2\t150\t2023\nQ3\t180\t2023\nQ4\t200\t2023\nQ1\t140\t2024\nQ2\t170\t2024\nQ3\t210\t2024\nQ4\t240\t2024' },
+    histogram: { label:'📊 直方图', tsv:'score\n65\n70\n72\n73\n75\n76\n78\n80\n81\n82\n83\n84\n85\n86\n87\n88\n89\n90\n91\n92\n93\n95\n98\n100' },
+    radar: { label:'🎯 雷达图', tsv:'dimension\tvalue\tgroup\n销售\t85\t产品A\n市场\t70\t产品A\n研发\t92\t产品A\n服务\t78\t产品A\n运营\t88\t产品A\n销售\t72\t产品B\n市场\t85\t产品B\n研发\t65\t产品B\n服务\t90\t产品B\n运营\t75\t产品B' },
+    pie: { label:'🥧 饼图', tsv:'category\tvalue\n直接访问\t335\n邮件营销\t210\n联盟广告\t274\n视频广告\t235\n搜索引擎\t400' },
+    treemap: { label:'🗂️ 矩形树图', tsv:'name\tvalue\ntype\n技术部\t350\t部门\n市场部\t250\t部门\n运营部\t200\t部门' },
+    liquid: { label:'💧 水波图', tsv:'metric\tpercent\n完成率\t0.72' },
+    scatter: { label:'⚬ 散点图', tsv:'x\ty\tgroup\n10\t20\t组A\n15\t35\t组A\n20\t25\t组A\n25\t45\t组A\n30\t30\t组A\n12\t18\t组B\n18\t28\t组B\n22\t40\t组B\n28\t35\t组B\n35\t50\t组B' },
+    sankey: { label:'🌊 桑基图', tsv:'source\ttarget\tvalue\n首页\t产品页\t120\n首页\t关于页\t80\n产品页\t购买\t60\n产品页\t放弃\t40\n关于页\t联系\t50\n关于页\t放弃\t30\n联系\t购买\t30' },
+    venn: { label:'⭕ 韦恩图', tsv:'label\tvalue\tsets\n技术\t40\t技术\n设计\t35\t设计\n产品\t30\t产品\nT+D\t15\t技术,设计\nT+P\t10\t技术,产品\nD+P\t12\t设计,产品\nAll\t5\t技术,设计,产品' },
+    network_graph: { label:'🕸️ 网络图', tsv:'node_type\tname\nnode\tAlice\nnode\tBob\nnode\tCarol\nnode\tDave\nnode\tEve\nedge\tAlice-Bob\nedge\tAlice-Carol\nedge\tBob-Dave\nedge\tCarol-Eve\nedge\tDave-Eve' },
+    boxplot: { label:'📦 箱线图', tsv:'category\tvalue\nA班\t65\nA班\t72\nA班\t78\nA班\t85\nA班\t90\nA班\t95\nB班\t55\nB班\t68\nB班\t74\nB班\t80\nB班\t88\nB班\t92' },
+    violin: { label:'🎻 小提琴图', tsv:'category\tvalue\n方案A\t10\n方案A\t15\n方案A\t20\n方案A\t25\n方案A\t30\n方案A\t35\n方案B\t18\n方案B\t22\n方案B\t28\n方案B\t32\n方案B\t38\n方案B\t42' },
+    funnel: { label:'🔻 漏斗图', tsv:'stage\tvalue\n浏览\t10000\n点击\t5000\n加购\t2000\n下单\t800\n付款\t500' },
+    flow_diagram: { label:'🔀 流程图', tsv:'node_type\tname\nnode\t需求评审\nnode\t设计\nnode\t开发\nnode\t测试\nnode\t上线\nedge\t需求评审-设计\nedge\t设计-开发\nedge\t开发-测试\nedge\t测试-上线' },
+    fishbone: { label:'🐟 鱼骨图', tsv:'node_type\tname\tnode_type\tname\nnode\t项目延期\nnode\t人员\nnode\t流程\nnode\t技术\nnode\t环境' },
+    organization_chart: { label:'🏛️ 组织架构', tsv:'node_type\tname\tdescription\nnode\tCEO\t首席执行官\nnode\tCTO\t技术总监\nnode\tCFO\t财务总监\nnode\tCMO\t市场总监' },
+    mind_map: { label:'🧠 思维导图', tsv:'node_type\tname\nnode\t数据分析\nnode\t数据采集\nnode\t数据处理\nnode\t数据可视化\nnode\t数据建模' },
+    word_cloud: { label:'☁️ 词云图', tsv:'text\tvalue\n人工智能\t100\n大数据\t85\n云计算\t75\n区块链\t60\n物联网\t55\n机器学习\t90\n深度学习\t80\n自然语言\t65\n计算机视觉\t70\n数据挖掘\t50' },
+    spreadsheet: { label:'📋 数据表格', tsv:'name\tsales\tprofit\tregion\n产品A\t120\t30\t华东\n产品B\t150\t45\t华南\n产品C\t180\t55\t华北\n产品D\t200\t65\t西南' },
+    district_map: { label:'🗺️ 区域地图', tsv:'name\tdataValue\n杭州\t1200\n宁波\t800\n温州\t650\n嘉兴\t500' },
+    pin_map: { label:'📍 标记地图', tsv:'poi\n北京天安门\n上海外滩\n杭州西湖\n广州塔\n成都天府广场' },
+    path_map: { label:'🛤️ 路径地图', tsv:'poi\n北京\n西安\n成都\n昆明' }
+};
+
+// ── 示例数据（用于生成示例图表） ──
+const EXAMPLE_ARGS = {
+    line: { data:[{time:'2024-01',value:120,group:'系列A'},{time:'2024-02',value:150,group:'系列A'},{time:'2024-03',value:180,group:'系列A'},{time:'2024-04',value:160,group:'系列A'},{time:'2024-05',value:200,group:'系列A'},{time:'2024-01',value:80,group:'系列B'},{time:'2024-02',value:100,group:'系列B'},{time:'2024-03',value:130,group:'系列B'},{time:'2024-04',value:110,group:'系列B'},{time:'2024-05',value:140,group:'系列B'}], title:'月度趋势' },
+    area: { data:[{time:'Q1',value:100,group:'产品A'},{time:'Q2',value:150,group:'产品A'},{time:'Q3',value:180,group:'产品A'},{time:'Q4',value:220,group:'产品A'},{time:'Q1',value:80,group:'产品B'},{time:'Q2',value:120,group:'产品B'},{time:'Q3',value:160,group:'产品B'},{time:'Q4',value:190,group:'产品B'}], title:'季度趋势' },
+    dual_axes: { categories:['1月','2月','3月','4月','5月'], series:[{type:'column',data:[120,150,180,160,200],axisYTitle:'销售额'},{type:'line',data:[80,85,90,88,95],axisYTitle:'利润率'}], title:'销售额与利润率' },
+    bar: { data:[{category:'华东',value:320},{category:'华南',value:280},{category:'华北',value:250},{category:'西南',value:180},{category:'华中',value:220}], title:'区域销售对比' },
+    column: { data:[{category:'Q1',value:120,group:'2023'},{category:'Q2',value:150,group:'2023'},{category:'Q3',value:180,group:'2023'},{category:'Q4',value:200,group:'2023'},{category:'Q1',value:140,group:'2024'},{category:'Q2',value:170,group:'2024'},{category:'Q3',value:210,group:'2024'},{category:'Q4',value:240,group:'2024'}], title:'季度同比' },
+    histogram: { data:[65,70,72,73,75,76,78,80,81,82,83,84,85,86,87,88,89,90,91,92,93,95,98,100], title:'成绩分布' },
+    radar: { data:[{name:'销售',value:85,group:'产品A'},{name:'市场',value:70,group:'产品A'},{name:'研发',value:92,group:'产品A'},{name:'服务',value:78,group:'产品A'},{name:'运营',value:88,group:'产品A'},{name:'销售',value:72,group:'产品B'},{name:'市场',value:85,group:'产品B'},{name:'研发',value:65,group:'产品B'},{name:'服务',value:90,group:'产品B'},{name:'运营',value:75,group:'产品B'}], title:'产品能力对比' },
+    pie: { data:[{category:'直接访问',value:335},{category:'邮件营销',value:210},{category:'联盟广告',value:274},{category:'视频广告',value:235},{category:'搜索引擎',value:400}], title:'流量来源' },
+    treemap: { data:[{name:'技术部',value:350,children:[{name:'前端',value:150},{name:'后端',value:120},{name:'测试',value:80}]},{name:'市场部',value:250,children:[{name:'品牌',value:120},{name:'推广',value:130}]},{name:'运营部',value:200,children:[{name:'用户运营',value:100},{name:'内容运营',value:100}]}], title:'部门人员分布' },
+    liquid: { percent:0.72, title:'任务完成率' },
+    scatter: { data:[{x:10,y:20,group:'组A'},{x:15,y:35,group:'组A'},{x:20,y:25,group:'组A'},{x:25,y:45,group:'组A'},{x:30,y:30,group:'组A'},{x:12,y:18,group:'组B'},{x:18,y:28,group:'组B'},{x:22,y:40,group:'组B'},{x:28,y:35,group:'组B'},{x:35,y:50,group:'组B'}], title:'相关性分析' },
+    sankey: { data:[{source:'首页',target:'产品页',value:120},{source:'首页',target:'关于页',value:80},{source:'产品页',target:'购买',value:60},{source:'产品页',target:'放弃',value:40},{source:'关于页',target:'联系',value:50},{source:'关于页',target:'放弃',value:30},{source:'联系',target:'购买',value:30}], title:'用户流转' },
+    venn: { data:[{sets:['技术'],value:40,label:'技术 40'},{sets:['设计'],value:35,label:'设计 35'},{sets:['产品'],value:30,label:'产品 30'},{sets:['技术','设计'],value:15,label:'15'},{sets:['技术','产品'],value:10,label:'10'},{sets:['设计','产品'],value:12,label:'12'},{sets:['技术','设计','产品'],value:5,label:'5'}], title:'技能重叠' },
+    network_graph: { data:{nodes:[{name:'Alice'},{name:'Bob'},{name:'Carol'},{name:'Dave'},{name:'Eve'}],edges:[{source:'Alice',target:'Bob',name:'同事'},{source:'Alice',target:'Carol',name:'朋友'},{source:'Bob',target:'Dave',name:'同学'},{source:'Carol',target:'Eve',name:'邻居'},{source:'Dave',target:'Eve',name:'搭档'}]}, title:'人际关系网' },
+    boxplot: { data:[{category:'A班',value:65},{category:'A班',value:72},{category:'A班',value:78},{category:'A班',value:85},{category:'A班',value:90},{category:'A班',value:95},{category:'B班',value:55},{category:'B班',value:68},{category:'B班',value:74},{category:'B班',value:80},{category:'B班',value:88},{category:'B班',value:92}], title:'成绩分布对比' },
+    violin: { data:[{category:'方案A',value:10},{category:'方案A',value:15},{category:'方案A',value:20},{category:'方案A',value:25},{category:'方案A',value:30},{category:'方案A',value:35},{category:'方案B',value:18},{category:'方案B',value:22},{category:'方案B',value:28},{category:'方案B',value:32},{category:'方案B',value:38},{category:'方案B',value:42}], title:'方案效果分布' },
+    funnel: { data:[{category:'浏览',value:10000},{category:'点击',value:5000},{category:'加购',value:2000},{category:'下单',value:800},{category:'付款',value:500}], title:'转化漏斗' },
+    flow_diagram: { data:{nodes:[{name:'需求评审'},{name:'设计'},{name:'开发'},{name:'测试'},{name:'上线'}],edges:[{source:'需求评审',target:'设计',name:'通过'},{source:'设计',target:'开发',name:'确认'},{source:'开发',target:'测试',name:'提交'},{source:'测试',target:'上线',name:'通过'}]}, title:'研发流程' },
+    fishbone: { data:{name:'项目延期',children:[{name:'人员',children:[{name:'人手不足'},{name:'技能欠缺'}]},{name:'流程',children:[{name:'需求变更'},{name:'评审缺失'}]},{name:'技术',children:[{name:'架构复杂'},{name:'技术债务'}]},{name:'环境',children:[{name:'服务器不稳定'},{name:'工具不完善'}]}]}, title:'原因分析' },
+    organization_chart: { data:{name:'CEO',description:'首席执行官',children:[{name:'CTO',description:'技术总监',children:[{name:'前端负责人'},{name:'后端负责人'}]},{name:'CFO',description:'财务总监',children:[{name:'会计主管'},{name:'审计主管'}]},{name:'CMO',description:'市场总监',children:[{name:'品牌经理'},{name:'推广经理'}]}]}, title:'组织架构' },
+    mind_map: { data:{name:'数据分析',children:[{name:'数据采集',children:[{name:'日志'},{name:'埋点'},{name:'API'}]},{name:'数据处理',children:[{name:'清洗'},{name:'转换'},{name:'聚合'}]},{name:'数据可视化',children:[{name:'图表'},{name:'仪表盘'}]},{name:'数据建模',children:[{name:'回归'},{name:'分类'},{name:'聚类'}]}]}, title:'知识体系' },
+    word_cloud: { data:[{text:'人工智能',value:100},{text:'大数据',value:85},{text:'云计算',value:75},{text:'区块链',value:60},{text:'物联网',value:55},{text:'机器学习',value:90},{text:'深度学习',value:80},{text:'自然语言',value:65},{text:'计算机视觉',value:70},{text:'数据挖掘',value:50},{text:'边缘计算',value:45},{text:'5G',value:40}], title:'技术热词' },
+    spreadsheet: { data:[{name:'产品A',sales:120,profit:30,region:'华东'},{name:'产品B',sales:150,profit:45,region:'华南'},{name:'产品C',sales:180,profit:55,region:'华北'},{name:'产品D',sales:200,profit:65,region:'西南'}], title:'销售报表' },
+    district_map: { title:'浙江省', data:{name:'浙江省',subdistricts:[{name:'杭州',dataValue:1200},{name:'宁波',dataValue:800},{name:'温州',dataValue:650},{name:'嘉兴',dataValue:500}]}, isMap:true },
+    pin_map: { title:'门店分布', data:['北京天安门','上海外滩','杭州西湖','广州塔','成都天府广场'], isMap:true },
+    path_map: { title:'旅行路线', data:[{data:['北京','西安','成都','昆明']}], isMap:true }
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let uploadedData = null;
+let selectedChart = null;
+let generatedUrl = null;
+
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+(function init() {
+    renderCategories();
+    renderTemplates();
+    initUpload();
+})();
+
+function renderCategories() {
+    const el = document.getElementById('chartCategories');
+    el.innerHTML = CATEGORIES.map(cat => `
+        <div class="chart-category">
+            <div class="cat-header">
+                <div class="cat-icon" style="background:${cat.color}15;color:${cat.color}">${cat.icon}</div>
+                <div><h3>${cat.name}</h3><p>${cat.desc}</p></div>
+                <span class="cat-count">${cat.charts.length} 种</span>
+            </div>
+            <div class="chart-grid">
+                ${cat.charts.map(c => `
+                    <div class="chart-card" data-chart="${c.key}" onclick="selectChart('${c.key}',event)">
+                        <div class="chart-thumb">
+                            <img src="${THUMB_URLS[c.key]}" alt="${c.name}" loading="lazy" onerror="this.style.display='none'">
+                            <div class="thumb-overlay"><span>选择此图表</span></div>
+                        </div>
+                        <div class="chart-info">
+                            <h4>${c.name}</h4>
+                            <p>${c.desc}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderTemplates() {
+    const el = document.getElementById('tplGrid');
+    el.innerHTML = Object.entries(TEMPLATES).map(([k,v]) =>
+        `<button class="tpl-btn" onclick="dlTemplate('${k}')"><span class="t-icon">${v.label.split(' ')[0]}</span><span>${v.label.split(' ').slice(1).join(' ')}</span></button>`
+    ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// UPLOAD
+// ═══════════════════════════════════════════════════════════
+function initUpload() {
+    const zone = document.getElementById('uploadZone');
+    const input = document.getElementById('fileInput');
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+    input.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+}
+
+function handleFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['tsv','csv','xlsx','xls'].includes(ext)) return toast('不支持的格式','err');
+    const reader = new FileReader();
+    if (ext === 'xlsx' || ext === 'xls') {
+        reader.onload = e => {
+            try {
+                const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                uploadedData = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                showFileInfo(file, uploadedData);
+                toast('上传成功','ok');
+            } catch(err) { toast('解析失败: '+err.message,'err'); }
+        };
+        reader.readAsArrayBuffer(file);
+    } else {
+        reader.onload = e => {
+            try {
+                uploadedData = parseCSV(e.target.result, ext==='tsv'?'\t':',');
+                showFileInfo(file, uploadedData);
+                toast('上传成功','ok');
+            } catch(err) { toast('解析失败: '+err.message,'err'); }
+        };
+        reader.readAsText(file);
+    }
+}
+
+function parseCSV(text, delim) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(delim).map(h=>h.trim());
+    return lines.slice(1).map(line => {
+        const vals = line.split(delim);
+        const row = {};
+        headers.forEach((h,i) => {
+            let v = vals[i]?.trim() || '';
+            const n = parseFloat(v);
+            row[h] = isNaN(n) ? v : n;
+        });
+        return row;
+    });
+}
+
+function showFileInfo(file, data) {
+    document.getElementById('fileInfo').classList.add('show');
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileStats').textContent = `${data.length} 行 × ${Object.keys(data[0]||{}).length} 列`;
+    const card = document.getElementById('previewCard');
+    card.style.display = 'block';
+    const headers = Object.keys(data[0]||{});
+    const rows = data.slice(0,8);
+    let html = '<table><thead><tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+    rows.forEach(r => { html += '<tr>' + headers.map(h=>`<td>${r[h]??''}</td>`).join('') + '</tr>'; });
+    html += '</tbody></table>';
+    document.getElementById('previewTable').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════════════════════
+function dlTemplate(key) {
+    const tpl = TEMPLATES[key];
+    if (!tpl) return;
+    const blob = new Blob([tpl.tsv], {type:'text/tab-separated-values'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${key}_template.tsv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('模板已下载','ok');
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHART SELECTION & GENERATION
+// ═══════════════════════════════════════════════════════════
+function selectChart(key, e) {
+    if (!uploadedData) { toast('请先上传数据文件','err'); return; }
+    document.querySelectorAll('.chart-card').forEach(c=>c.classList.remove('selected'));
+    e.currentTarget.classList.add('selected');
+    selectedChart = key;
+    const names = {line:'折线图',area:'面积图',dual_axes:'双轴图',bar:'条形图',column:'柱状图',histogram:'直方图',radar:'雷达图',pie:'饼图',treemap:'矩形树图',liquid:'水波图',scatter:'散点图',sankey:'桑基图',venn:'韦恩图',network_graph:'网络图',boxplot:'箱线图',violin:'小提琴图',funnel:'漏斗图',flow_diagram:'流程图',fishbone:'鱼骨图',organization_chart:'组织架构图',mind_map:'思维导图',word_cloud:'词云图',spreadsheet:'表格',district_map:'区域地图',pin_map:'标记地图',path_map:'路径地图'};
+    document.getElementById('selBadge').textContent = names[key] || key;
+    const sec = document.getElementById('genSection');
+    sec.classList.add('show');
+    sec.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+function resetSel() {
+    document.querySelectorAll('.chart-card').forEach(c=>c.classList.remove('selected'));
+    selectedChart = null;
+    document.getElementById('genSection').classList.remove('show');
+    document.getElementById('chartOutput').classList.remove('show');
+}
+
+async function generateChart() {
+    if (!uploadedData || !selectedChart) return toast('请上传数据并选择图表','err');
+    const title = document.getElementById('optTitle').value || '数据可视化';
+    const theme = document.getElementById('optTheme').value;
+    const w = parseInt(document.getElementById('optW').value)||800;
+    const h = parseInt(document.getElementById('optH').value)||500;
+
+    const out = document.getElementById('chartOutput');
+    out.classList.add('show');
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('chartImg').style.display = 'none';
+    out.scrollIntoView({behavior:'smooth',block:'center'});
+
+    try {
+        const args = buildArgs(selectedChart, uploadedData, {title,theme,width:w,height:h});
+        const tool = TOOL_MAP[selectedChart];
+        const payload = { type: TYPE_MAP[tool], source: 'chart-visualization-web', ...args };
+        const res = await fetch('/api/generate', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        const result = await res.json();
+        if (result.success && result.resultObj) {
+            generatedUrl = result.resultObj;
+            const img = document.getElementById('chartImg');
+            img.src = generatedUrl;
+            img.style.display = 'block';
+            document.getElementById('spinner').style.display = 'none';
+            toast('图表生成成功','ok');
+        } else {
+            throw new Error(result.errorMessage || '生成失败');
+        }
+    } catch(err) {
+        document.getElementById('spinner').style.display = 'none';
+        toast('生成失败: '+err.message,'err');
+    }
+}
+
+function buildArgs(key, data, opts) {
+    const base = { title:opts.title, theme:opts.theme, width:opts.width, height:opts.height };
+    // 特殊图表类型的数据格式转换
+    if (key === 'histogram') {
+        // histogram 需要 number[]
+        const numCol = Object.keys(data[0]).find(k => typeof data[0][k] === 'number');
+        return { ...base, data: numCol ? data.map(r=>r[numCol]) : data.map(r=>parseFloat(Object.values(r)[0])) };
+    }
+    if (key === 'liquid') {
+        const numCol = Object.keys(data[0]).find(k => typeof data[0][k] === 'number');
+        const val = numCol ? data[0][numCol] : parseFloat(Object.values(data[0])[0]);
+        return { ...base, percent: Math.min(1, Math.max(0, val)) };
+    }
+    if (key === 'dual_axes') {
+        const cols = Object.keys(data[0]);
+        const cats = data.map(r=>r[cols[0]]);
+        const series = cols.slice(1).map((c,i) => ({
+            type: i===0 ? 'column' : 'line',
+            data: data.map(r=>r[c]),
+            axisYTitle: c
+        }));
+        return { ...base, categories:cats, series };
+    }
+    if (['network_graph','flow_diagram'].includes(key)) {
+        // 尝试从扁平数据构建 nodes/edges
+        const nodes = data.filter(r=>r.node_type==='node').map(r=>({name:r.name}));
+        const edges = data.filter(r=>r.node_type==='edge').map(r=>{
+            const parts = r.name.split('-');
+            return {source:parts[0],target:parts[1],name:r.name};
+        });
+        if (nodes.length && edges.length) return { ...base, data:{nodes,edges} };
+        return { ...base, data };
+    }
+    if (['fishbone','mind_map','organization_chart'].includes(key)) {
+        const nodes = data.filter(r=>r.node_type==='node').map(r=>({name:r.name,description:r.description}));
+        if (nodes.length > 1) {
+            const root = nodes[0];
+            root.children = nodes.slice(1);
+            return { ...base, data:root };
+        }
+        return { ...base, data };
+    }
+    if (key === 'district_map') {
+        const subs = data.map(r=>({name:r.name,dataValue:r.dataValue}));
+        return { ...base, title:opts.title, data:{name:opts.title,subdistricts:subs} };
+    }
+    if (key === 'pin_map') {
+        return { ...base, title:opts.title, data:data.map(r=>r.poi||r.name||Object.values(r)[0]) };
+    }
+    if (key === 'path_map') {
+        return { ...base, title:opts.title, data:[{data:data.map(r=>r.poi||r.name||Object.values(r)[0])}] };
+    }
+    if (key === 'treemap') {
+        // 如果有 type 字段，按 type 分组
+        if (data[0] && data[0].type) {
+            const groups = {};
+            data.forEach(r => {
+                if (!groups[r.type]) groups[r.type] = [];
+                groups[r.type].push({name:r.name,value:r.value});
+            });
+            return { ...base, data:Object.entries(groups).map(([k,children])=>({name:k,value:children.reduce((s,c)=>s+c.value,0),children})) };
+        }
+    }
+    return { ...base, data };
+}
+
+// ═══════════════════════════════════════════════════════════
+// DOWNLOAD
+// ═══════════════════════════════════════════════════════════
+async function dlPNG() {
+    if (!generatedUrl) return toast('请先生成图表','err');
+    try {
+        const res = await fetch(generatedUrl);
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `chart_${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        toast('PNG 已下载','ok');
+    } catch(e) { toast('下载失败','err'); }
+}
+
+async function dlPDF() {
+    if (!generatedUrl) return toast('请先生成图表','err');
+    try {
+        const {jsPDF} = window.jspdf;
+        const pdf = new jsPDF('landscape','mm','a4');
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            const pw = pdf.internal.pageSize.getWidth();
+            const ph = pdf.internal.pageSize.getHeight();
+            const ratio = Math.min(pw/img.width, ph/img.height)*0.9;
+            const fw = img.width*ratio, fh = img.height*ratio;
+            pdf.addImage(img,'PNG',(pw-fw)/2,(ph-fh)/2,fw,fh);
+            pdf.save(`chart_${Date.now()}.pdf`);
+            toast('PDF 已下载','ok');
+        };
+        img.onerror = () => toast('图片加载失败','err');
+        img.src = generatedUrl;
+    } catch(e) { toast('PDF 生成失败','err'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+document.getElementById('modal').addEventListener('click', e => { if(e.target.id==='modal') closeModal(); });
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast ' + type + ' show';
+    setTimeout(()=>el.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

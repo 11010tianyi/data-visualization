@@ -95,8 +95,12 @@ data-visualization/
 ├── api/
 │   └── generate.js     # Vercel Serverless Function
 ├── vercel.json         # Vercel 配置
+├── 相关性资源集/
+│   └── DataViz_Studio_全网高相关性项目清单.md  # 全网高相关性项目与文档索引（纯 Markdown，不参与构建与部署路由）
 └── README.md           # 本文档
 ```
+
+相关性资源集说明：[`相关性资源集/DataViz_Studio_全网高相关性项目清单.md`](相关性资源集/DataViz_Studio_全网高相关性项目清单.md) 根据本工具的定位（AntV/GPT-Vis、多图表类型、表格导入与导出等）整理，便于调研与对照；该目录仅为文档，不影响 Vercel 构建与 `api/` 行为。
 
 ## API 说明
 
@@ -167,6 +171,11 @@ time	value	group
 - 图表引擎：[AntV/GPT-Vis](https://github.com/antvis/GPT-Vis)
 - 后端：Node.js / Vercel Serverless Function
 - 字体：Google Fonts (Poppins + Lora)
+
+
+## 相关性资源集
+
+[`相关性资源集/DataViz_Studio_全网高相关性项目清单.md`](相关性资源集/DataViz_Studio_全网高相关性项目清单.md) 根据本工具的定位（AntV/GPT-Vis、多图表类型、表格导入与导出等）整理，便于调研与对照；该目录仅为文档，不影响 Vercel 构建与 `api/` 行为。
 
 ## License
 
